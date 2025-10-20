@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from "next/image";
 
 export default function Home() {
@@ -45,7 +45,7 @@ export default function Home() {
     }
   }, [isMuted]);
 
-  const handleScrubbing = (e: MouseEvent) => {
+  const handleScrubbing = useCallback((e: MouseEvent) => {
     const progressBar = document.querySelector('.progress-bar-background') as HTMLDivElement;
     if (isScrubbing && progressBar) {
       const rect = progressBar.getBoundingClientRect();
@@ -56,11 +56,11 @@ export default function Home() {
         setCurrentTime(newTime);
       }
     }
-  };
+  }, [isScrubbing, duration]);
 
-  const handleScrubEnd = () => {
+  const handleScrubEnd = useCallback(() => {
     setIsScrubbing(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (isScrubbing) {
@@ -71,7 +71,7 @@ export default function Home() {
       window.removeEventListener('mousemove', handleScrubbing);
       window.removeEventListener('mouseup', handleScrubEnd);
     };
-  }, [isScrubbing, duration]);
+  }, [isScrubbing, handleScrubbing, handleScrubEnd]);
 
   const togglePlayPause = () => {
     if (isPlaying) {
@@ -93,6 +93,7 @@ export default function Home() {
   };
 
   const handleScrubStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickPosition = (e.clientX - rect.left) / rect.width;
     const newTime = Math.max(0, Math.min(clickPosition * duration, duration));
@@ -138,21 +139,27 @@ export default function Home() {
         <span className="current-time">{formatTime(currentTime)}</span>
         <span className="total-time">{formatTime(duration)}</span>
       </div>
-      <div className="volume-container">
-        <button className="control-btn" onClick={decreaseVolume}><i className="fas fa-volume-down"></i></button>
-        <input type="range" min="0" max="1" step="0.01" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="volume-slider" />
-        <button className="control-btn" onClick={increaseVolume}><i className="fas fa-volume-up"></i></button>
-        <span style={{ color: '#bdc3c7', minWidth: '45px', textAlign: 'left' }}>{Math.round(volume * 100)}%</span>
+
+      <div className="all-controls-container">
+        <div className="volume-container">
+          <button className="control-btn vol-down" onClick={decreaseVolume}><i className="fas fa-volume-down"></i></button>
+          <input type="range" min="0" max="1" step="0.01" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="volume-slider" />
+          <div className="volume-right-group">
+            <button className="control-btn vol-up" onClick={increaseVolume}><i className="fas fa-volume-up"></i></button>
+            <span className="volume-percentage">{Math.round(volume * 100)}%</span>
+          </div>
+        </div>
+        <div className="controls">
+          <button className="control-btn btn-prev"><i className="fas fa-step-backward"></i></button>
+          <button className="control-btn play-btn" onClick={togglePlayPause}><i className={isPlaying ? "fas fa-pause" : "fas fa-play"}></i></button>
+          <button className="control-btn btn-next"><i className="fas fa-step-forward"></i></button>
+          <button className="control-btn btn-mute" onClick={toggleMute}>
+            <i className={isMuted ? "fas fa-volume-mute" : "fas fa-volume-up"}></i>
+          </button>
+        </div>
       </div>
-      <div className="controls">
-        <button className="control-btn"><i className="fas fa-step-backward"></i></button>
-        <button className="control-btn play-btn" onClick={togglePlayPause}><i className={isPlaying ? "fas fa-pause" : "fas fa-play"}></i></button>
-        <button className="control-btn"><i className="fas fa-step-forward"></i></button>
-        <button className="control-btn" onClick={toggleMute}>
-          <i className={isMuted ? "fas fa-volume-mute" : "fas fa-volume-up"}></i>
-        </button>
-      </div>
-      <div style={{ textAlign: 'center', paddingBottom: '20px', color: '#7f8c8d', fontSize: '14px' }}>
+      
+      <div className="status-text">
         <p>{isPlaying ? "Áudio tocando" : "Áudio pausado"}</p>
       </div>
     </div>
